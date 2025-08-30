@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<b>По любым вопросам телеграм @Tunyaa </b>
+
+<html>
+<head>
+    <title>Twitch Description Changer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #6441a5;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        textarea {
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background-color: #6441a5;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #7d5bbe;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .loading {
+            background-color: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Изменение описания Twitch</h1>
+        
+        <div class="form-group">
+            <label for="clientId">Client ID:</label>
+            <input type="hidden" id="clientId" value="ztdcs2aqnlcvjpaxmu7u19xsa497zn">
+        </div>
+
+        <div class="form-group">
+            <label for="accessToken">Access Token:</label>
+            <input type="text" id="accessToken" value="accessToken">
+        </div>
+
+        <div class="form-group">
+            <label for="broadcasterId">Broadcaster ID:</label>
+            <input type="text" id="broadcasterId" value="broadcasterId">
+        </div>
+
+        <div class="form-group">
+            <label for="description">Новое описание:</label>
+            <textarea id="description"></textarea>
+        </div>
+
+        <button onclick="changeDescription()">Изменить описание</button>
+
+        <div id="status" class="status" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function changeDescription() {
+            const clientId = document.getElementById('clientId').value.trim();
+            const accessToken = document.getElementById('accessToken').value.trim();
+            const broadcasterId = document.getElementById('broadcasterId').value.trim();
+            const newDescription = document.getElementById('description').value.trim();
+
+            const statusDiv = document.getElementById('status');
+            const button = document.querySelector('button');
+
+            // Проверка заполнения полей
+            if (!clientId || !accessToken || !broadcasterId || !newDescription) {
+                showStatus('Заполните все поля!', 'error');
+                return;
+            }
+
+            // Показываем загрузку
+            button.disabled = true;
+            showStatus('Отправляем запрос...', 'loading');
+
+            try {
+                const response = await fetch('https://api.twitch.tv/helix/channels', {
+                    method: 'PATCH',
+                    headers: {
+                        'Client-ID': clientId,
+                        'Authorization': `Bearer ${accessToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        broadcaster_id: broadcasterId,
+                        title: newDescription
+                    })
+                });
+
+                if (response.status === 204) {
+                    showStatus('✅ Описание успешно изменено! Проверьте Twitch.', 'success');
+                } else {
+                    const errorData = await response.json().catch(() => ({}));
+                    showStatus(`❌ Ошибка ${response.status}: ${errorData.message || 'Неизвестная ошибка'}`, 'error');
+                }
+
+            } catch (error) {
+                showStatus(`❌ Сетевая ошибка: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+            statusDiv.style.display = 'block';
+            
+            // Автоскрытие успешного сообщения
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Сохраняем данные при изменении
+        document.querySelectorAll('input, textarea').forEach(input => {
+            input.addEventListener('change', function() {
+                localStorage.setItem(this.id, this.value);
+            });
+        });
+
+        // Загружаем сохраненные данные
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input, textarea').forEach(input => {
+                const saved = localStorage.getItem(input.id);
+                if (saved) input.value = saved;
+            });
+        });
+    </script>
+</body>
+</html>
